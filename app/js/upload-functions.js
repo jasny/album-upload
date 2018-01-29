@@ -98,39 +98,16 @@ function getAWSSettings() {
     return awsSettings;
 }
 
-//Check reference to album on facebook. Stub for now
-function getAlbumReference() {
-    return true;
+//Get album data from album form
+function getFormAlbumData() {
+    const $form = $('#album-form');
+
+    return {
+        name: $form.find('.album-name').val().trim(),
+        message: $form.find('.album-message').val().trim(),
+        location: $form.find('.album-location').val().trim()
+    };
 }
-    
-//Save album info and perform some action after saving
-function saveAlbumInfo(success, error) {                 
-    addDefferedFileAction(success, error);
-    
-    //For now do not create album on Facebook
-    //Instead immediately process file
-    
-    doDefferedFileAction('success');
-}        
-
-const actions = {'success': [], 'error': []};    
-
-//Defer file upload or removal
-function addDefferedFileAction(success, error) {
-    actions.success.push(success);
-    actions.error.push(error);     
-}
-
-//Do each file upload or removal after album auto-creation
-function doDefferedFileAction(type) {
-    if (!actions[type] || !actions[type].length) return; 
-    
-    for (var i=0; i<actions[type].length; i++) {
-        if (actions[type][i]) actions[type][i]();
-    }
-    
-    actions[type] = [];
-}      
 
 //Validate album form on add pictures before album auto-creation
 function validateForm() {
