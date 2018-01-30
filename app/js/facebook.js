@@ -60,21 +60,25 @@ function canUploadPicturesToFB() {
         permissions.indexOf('publish_pages') !== -1;
 }
 
-const albumsFBIds = {};
+const albumsFBExists = {};
 
 //Create album on Facebook
 function createFbAlbum(albumData, callback) {
     const albumName = albumData.name;
-    if (albumsFBIds[albumName] || !facebookAuthResponse) {
+    if (albumsFBExists[albumName] || !facebookAuthResponse) {
         return callback();
     }
 
     const url = '/' + facebookSettings.pageId + '/albums';
 
     checkAlbumExists(url, albumName, function(exists) {
-        if (exists) return callback();
+        if (exists) {
+            albumsFBExists[albumName] = true;
+            return callback();
+        }
 
         FB.api(facebookSettings.pageId + '/albums', 'post', albumData, function(response) {
+            albumsFBExists[albumName] = true;
             callback();
         });
     });    
