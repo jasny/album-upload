@@ -28,7 +28,7 @@
                 if (!validateForm()) {
                     drop.removeAllFiles();
                 } else {
-                    var album = $albumForm.find('.album-name').val();
+                    const album = $albumForm.find('.album-name').val();
 
                     uploadParams = getUploadParams(album);
                     uploadParams ? 
@@ -43,16 +43,12 @@
                 if (!drop.files.length) return;
                 
                 uploadState('start');
-                
-                if (getAlbumReference()) { 
+
+                const albumData = getFormAlbumData();
+
+                createFbAlbum(albumData, function() {
                     drop.processFile(file);
-                    return;
-                }
-                
-                saveAlbumInfo(
-                    function() { drop.processFile(file) }, 
-                    function() { drop.removeFile(file) }
-                );                
+                });
             });
 
             //Dropzone does not support dynamic change of form 'action' attribute, so we set upload url like this

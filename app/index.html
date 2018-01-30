@@ -27,14 +27,14 @@
                 <div class="form-group">
                     <label class="control-label col-sm-2">Message</label>
                     <div class="col-sm-10">
-                        <input type="text" name="message" class="form-control" value=""/>
+                        <input type="text" name="message" class="form-control album-message" value=""/>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label class="control-label col-sm-2">Location</label>
                     <div class="col-sm-10">
-                        <input type="text" name="location" class="form-control" value=""/>
+                        <input type="text" name="location" class="form-control album-location" value=""/>
                     </div>
                 </div>
             </form>
@@ -49,21 +49,63 @@
                 <input type="hidden" name="policy" value="" />
                 <input type="hidden" name="x-amz-signature" value="" />
             </form>
+            
+            <div class="facebook-login-block">
+                <p class="not-done">
+                    Album will be uploaded to S3. If you want it to be also created on Facebook, please login into Facebook: 
+                    <a href="javascript:;" class="facebook-login"><img src="/img/sign-in-facebook.png"/>&nbsp;</a>
+                </p>
+                <p class="done">
+                    You are logged in to Facebook. Album will also be created there. <a href="javascript:;" class="facebook-logout">Logout</a>
+                </p>
+            </div>
         </div>        
 
         <script src="//code.jquery.com/jquery.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/dropzone/5.2.0/min/dropzone.min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/1000hz-bootstrap-validator/0.11.9/validator.min.js"></script>
         <script src="//cdn.jsdelivr.net/npm/node-forge@0.7.0/dist/forge.min.js"></script>
-        <script src="/js/functions.js"></script>
-        <script src="/js/upload.js"></script>
+
         <script>
-            var awsSettings = {
+            //Init AWS settings
+            const awsSettings = {
                 accessKeyId: '',
                 secret: '',
                 region: '',
                 bucket: '' //bucket name
             };
+
+            //Init Facebook settings
+            const facebookSettings = {
+                appId: '346280555872882', //Test Fiestainfo app (Fiestainfo LocalTest)
+                pageId: '1595429480526327' //Test page
+            };
+
+            //In here will be stored Facebook auth response
+            var facebookAuthResponse = null;
+
+            //Load Facebook SDK
+            window.fbAsyncInit = function() {
+                FB.init({
+                    appId: facebookSettings.appId,
+                    autoLogAppEvents : true,
+                    xfbml: true,
+                    version: 'v2.11'
+                });
+
+                onFacebookLoad();
+            };
+
+            (function(d, s, id){
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) {return;}
+                js = d.createElement(s); js.id = id;
+                js.src = "https://connect.facebook.net/en_US/sdk.js";
+                fjs.parentNode.insertBefore(js, fjs);
+            }(document, 'script', 'facebook-jssdk'));
         </script>
+        <script src="/js/upload-functions.js"></script>
+        <script src="/js/facebook.js"></script>
+        <script src="/js/upload.js"></script>
     </body>
 </html>
