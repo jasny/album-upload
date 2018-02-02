@@ -26,7 +26,7 @@
     //Logout from Facebook
     $(document).on('click', '.facebook-logout', function(e) {
         FB.logout(function(response) {
-            facebookAuthSettings = null;
+            facebookAuthResponse = null;
 
             $loginBlock.children().hide();
             $loginBlock.find('.not-done').show();            
@@ -41,7 +41,7 @@ function onFacebookLoad() {
 
     FB.getLoginStatus(function(response) {
         if (response.status === 'connected') {
-            facebookAuthSettings = response.authResponse;
+            facebookAuthResponse = response.authResponse;
             $loginBlock.find('.done').show();
         } else {
             $loginBlock.find('.not-done').show();
@@ -60,43 +60,101 @@ function canUploadPicturesToFB() {
         permissions.indexOf('publish_pages') !== -1;
 }
 
-const albumsFBExists = {};
+const albumsFBIds = {};
+var syncInProcess = false;
 
-//Create album on Facebook
-function createFbAlbum(albumData, callback) {
-    const albumName = albumData.name;
-    if (albumsFBExists[albumName] || !facebookAuthResponse) {
-        return callback();
+function syncFacebookAlbums(callback) {
+    if (syncInProcess) return;
+
+    var synced = false;
+    for (let name in albumsFBIds) {
+        synced = true;
+        break;
     }
 
-    const url = '/' + facebookSettings.pageId + '/albums';
+    if (synced) return callback();
 
-    checkAlbumExists(url, albumName, function(exists) {
-        if (exists) {
-            albumsFBExists[albumName] = true;
-            return callback();
-        }
-
-        FB.api(facebookSettings.pageId + '/albums', 'post', albumData, function(response) {
-            albumsFBExists[albumName] = true;
-            callback();
-        });
-    });    
+    syncInProcess = true;
+    loadAlbums(function() {
+        syncInProcess = false;
+        callback();
+    });
 }
 
-//Check if album with this name already exists on Facebook
-function checkAlbumExists(url, album, callback) {
-    FB.api(url, 'get', {fields: 'id,name', access_token: facebookAuthResponse.accessToken}, function(response) {
-        var exists = false;
+//Fetch albums data from Facebook
+function loadAlbums(callback) {
+    if (!facebookAuthResponse) return callback();
+
+    const params = {limit: 1, fields: 'id,name'};
+    loadAlbumsPage(params, callback);
+}
+
+//Fetch single page of albums results
+function loadAlbumsPage(params, callback) {    
+    const url = '/' + facebookSettings.pageId + '/albums';
+
+    FB.api(url, 'get', params, function(response) {
         const data = typeof response.data !== 'undefined' ? response.data : [];
 
         for (var i = 0; i < data.length; i++) {
-            if (data[i].name !== album) continue;
-
-            exists = true;
-            break;
+            albumsFBIds[data[i].name] = data[i].id;
         }
 
-        callback(exists);
+        if (typeof response.paging.next !== 'undefined' && response.paging.next) {
+            params.after = response.paging.cursors.after;
+            loadAlbumsPage(params, callback);
+        } else {
+            callback();
+        }
+    });
+}
+
+var syncCurrentInProcess = false;
+
+//Perform prepare upload actions after loading albums
+function syncCurrentlAlbum(callback) {
+    if (syncCurrentInProcess) return;
+
+    syncCurrentInProcess = true;
+    const albumData = getFormAlbumData();
+
+    getAlbumFBId(albumData, function(albumId) {
+        if (!uploadParams) {
+            uploadParams = getUploadParams(albumData.name, albumId);
+            useUpoadParams(uploadParams);            
+        }
+
+        syncCurrentInProcess = false;
+        callback();
+    });
+}
+
+//Get album FB id
+function getAlbumFBId(albumData, callback) {
+    const albumName = albumData.name;
+
+    if (typeof albumsFBIds[albumName] !== 'undefined') {
+        return callback(albumsFBIds[albumName]);
+    }
+
+    if (!facebookAuthResponse) {
+        return callback(null);
+    }
+
+    createFbAlbum(albumData, callback);
+}
+
+//Create album on Facebook
+function createFbAlbum(albumData, callback) {
+    FB.api(facebookSettings.pageId + '/albums', 'post', albumData, function(response) {
+        const id = typeof response.id !== 'undefined' ? response.id : null;
+
+        if (!id) {
+            const error = typeof response.error !== 'undefined' ? response.error.message : null;
+            $.alert('warning', 'We failed to create album on Facebook. ' + error);
+        }
+
+        albumsFBIds[albumData.name] = id;
+        callback(id);
     });
 }

@@ -1,101 +1,15 @@
-//Create upload params for sending file to AWS S3
-function getUploadParams(album) {
-    if (!album) return null;     
-    
-    const settings = getAWSSettings();
-    if (!settings) return null;
-        
-    const today = new Date();
-    const month = ("0" + (today.getMonth() + 1)).substr(-2);
-    const day = ("0" + (today.getDate())).substr(-2);
-    const hours = ("0" + (today.getHours())).substr(-2);
-    const nextHour = ("0" + (today.getHours() + 1)).substr(-2);
-    const minutes = ("0" + (today.getMinutes())).substr(-2);
-    const seconds = ("0" + (today.getSeconds())).substr(-2);
+//Check if files can be uploaded to S3
+function canUploadFiles() {
+    const allowUpload = validateForm();
 
-    const dateFormatted = today.getFullYear() + "" + month + "" + day;
-    const dateFormattedFull = dateFormatted + "T" + hours + "" + minutes + "" + seconds + "Z";
-    const expiration = today.getFullYear() + "-" + month + "-" + day + "T" + nextHour + ":" + minutes + ":" + seconds + "Z";    
+    if (!allowUpload) {
+        awsSettings = getAWSSettings();
+        allowUpload = awsSettings.accessKeyId && awsSettings.secret && awsSettings.region && awsSettings.bucket;
 
-    const policyValues = {
-        acl: "public-read",
-        key: album + "/",
-        "Content-Type": "image/",
-        "x-amz-credential": settings.accessKeyId + "/" + dateFormatted + "/" + settings.region + "/s3/aws4_request",
-        "x-amz-algorithm": "AWS4-HMAC-SHA256",
-        "x-amz-date": dateFormattedFull
-    };
-
-    const policy = {
-        "expiration": expiration,
-        "conditions": [
-            {"bucket": settings.bucket},
-            {"acl": policyValues.acl},
-            ["starts-with", "$key", policyValues.key],
-            ["starts-with", "$Content-Type", policyValues['Content-Type']],
-            {"x-amz-credential": policyValues['x-amz-credential']},
-            {"x-amz-algorithm": policyValues['x-amz-algorithm']},
-            {"x-amz-date": policyValues['x-amz-date']}
-        ]
-    };
-    
-    const policyJson = JSON.stringify(policy);
-    const base64 = forge.util.encode64(policyJson);
-    const signatureKey = getSignatureKey(settings.secret, settings.region, dateFormatted);
-    const signature = encodeSHA256(base64, signatureKey); 
-
-    return {
-        policyValues: policyValues,
-        policy: policy,
-        policyBase64: base64,
-        signature: signature,
-        bucket: settings.bucket
-    };
-}
-
-//Insert params into form for uploading files
-function useUpoadParams(params) {
-    var $form = $('#pictures-upload');
-    
-    for (var name in params.policyValues) {
-        var value = params.policyValues[name];
-        $form.find('[name="' + name + '"]').val(value);
+        if (!allowUpload) $.alert('danger', 'Access to AWS is not configured');
     }
 
-    $form.find('[name="key"]').val(params.policyValues.key + '${filename}');
-    $form.find('[name="policy"]').val(params.policyBase64);
-    $form.find('[name="x-amz-signature"]').val(params.signature);
-}
-
-//Calculate signature key
-function getSignatureKey(secret, region, dateStamp) {
-    var kDate = encodeSHA256(dateStamp, "AWS4" + secret, true);
-    var kRegion = encodeSHA256(region, kDate, true);
-    var kService = encodeSHA256('s3', kRegion, true);
-    var kSigning = encodeSHA256("aws4_request", kService, true);
-
-    return kSigning;
-}
-
-//Perform sha256 encoding
-function encodeSHA256(stringToEncode, key, binary) {
-    var hmac = forge.hmac.create();
-    hmac.start('sha256', key);
-    hmac.update(stringToEncode);
-
-    return binary ? 
-        hmac.digest().bytes() :
-        hmac.digest().toHex();
-}
-
-//Get base AWS settings
-function getAWSSettings() {
-    if (!awsSettings.accessKeyId || !awsSettings.secret || !awsSettings.region || !awsSettings.bucket) {
-        $.alert('danger', 'Access to AWS is not configured');
-        return null;
-    }
-
-    return awsSettings;
+    return allowUpload;
 }
 
 //Get album data from album form
@@ -115,6 +29,24 @@ function validateForm() {
     $form.validator('validate');
 
     return !$form.find(':invalid').length;
+}
+
+var actions = [];
+
+//Defer file upload or removal 
+function addDefferedFileAction(action) { 
+    actions.push(action); 
+} 
+ 
+//Do each file upload or removal after album auto-creation 
+function doDefferedFileAction() { 
+    if (!actions.length) return;  
+     
+    for (let i=0; i<actions.length; i++) { 
+        if (actions[i]) actions[i](); 
+    } 
+     
+    actions = []; 
 }
 
 $.alert = function(status, message, callback, autoClose) {
