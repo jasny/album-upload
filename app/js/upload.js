@@ -2,7 +2,6 @@
     const maxFilesize = 5; //MB
     const $albumForm = $('#album-form');
     var uploading = false;
-    var uploadParams = null;
 
     //Init pictures upload area
     Dropzone.options.picturesUpload = {
@@ -25,15 +24,8 @@
             
             //Validate album form before processing added files
             this.on('addedfile', function(file) {
-                if (!validateForm()) {
+                if (!canUploadFiles()) {
                     drop.removeAllFiles();
-                } else {
-                    const album = $albumForm.find('.album-name').val();
-
-                    uploadParams = getUploadParams(album);
-                    uploadParams ? 
-                        useUpoadParams(uploadParams) :
-                        drop.removeAllFiles();
                 }
             });
             
@@ -44,10 +36,12 @@
                 
                 uploadState('start');
 
-                const albumData = getFormAlbumData();
-
-                createFbAlbum(albumData, function() {
+                addDefferedFileAction(function() {
                     drop.processFile(file);
+                });
+
+                syncFacebookAlbums(function() {
+                    syncCurrentlAlbum(doDefferedFileAction);
                 });
             });
 
@@ -60,6 +54,8 @@
             
             //Save names of uploaded files to db
             this.on('queuecomplete', function() {
+                uploadParams = null;
+
                 var files = [];
                 var denied = false;
 
@@ -70,11 +66,6 @@
                 
                 //Skip denied files next time
                 offset = drop.files.length - files.length;
-
-                if (!files.length) {
-                    if (denied) $.alert('danger', 'All the files were rejected and not uploded');                    
-                    return uploadState('end');
-                }
 
                 if (denied) $.alert('warning', 'Some files were not uploaded');
                 else $.alert('success', 'All photos were uploaded successfully');
