@@ -1,9 +1,9 @@
 //Check if files can be uploaded to S3
 function canUploadFiles() {
-    const allowUpload = validateForm();
+    var allowUpload = validateForm();
 
-    if (!allowUpload) {
-        awsSettings = getAWSSettings();
+    if (allowUpload) {
+        const awsSettings = getAWSSettings();
         allowUpload = awsSettings.accessKeyId && awsSettings.secret && awsSettings.region && awsSettings.bucket;
 
         if (!allowUpload) $.alert('danger', 'Access to AWS is not configured');

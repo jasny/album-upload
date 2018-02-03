@@ -54,6 +54,8 @@
             
             //Save names of uploaded files to db
             this.on('queuecomplete', function() {
+                if (!uploading) return;
+
                 uploadParams = null;
 
                 var files = [];
