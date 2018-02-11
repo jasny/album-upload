@@ -1,7 +1,9 @@
+const requiredPermissions = 'publish_pages,manage_pages';
+
 +function() {
     const $loginBlock = $('.facebook-login-block');
     const loginOptions = {
-        scope: 'publish_pages,manage_pages', 
+        scope: requiredPermissions, 
         return_scopes: true
     };
 
@@ -14,12 +16,10 @@
                 return;
             }
 
-            if (!canUploadPicturesToFB()) {
-                $.alert('warning', 'You do not have permissions to upload pictures to Facebook');
-            }
+            canUploadToFacebook(getPageAccessToken);
 
             $loginBlock.children().hide();
-            $loginBlock.find('.done').show();            
+            $loginBlock.find('.done').show();
         }, loginOptions);
     });
 
@@ -50,14 +50,48 @@ function onFacebookLoad() {
 };
 
 //Check if user has permissions to upload pictures to Facebook
-function canUploadPicturesToFB() {
-    const data = facebookAuthResponse;
-    if (typeof data.authResponse.grantedScopes === 'undefined') return false;
+function canUploadToFacebook(callback) {
+    FB.api('me/permissions', 'get', function(response) {
+        if (!response || !response.data) return onError();
 
-    const permissions = data.authResponse.grantedScopes;
+        for (let i = 0; i < response.data.length; i++) {
+            let permission = response.data[i].permission;
 
-    return permissions.indexOf('manage_pages') !== -1 && 
-        permissions.indexOf('publish_pages') !== -1;
+            if (requiredPermissions.indexOf(permission) === -1) continue;
+            if (response.data[i].status !== 'granted') return onError();
+        }        
+
+        callback();
+    });
+
+    function onError() {
+        $.alert('warning', 'Failed to obtain page access token');
+    }
+}
+
+//Get access token for app page
+function getPageAccessToken(callback) {
+    FB.api('me/accounts', 'get', function(response) {
+        if (!response || !response.data) return onError();
+
+        let token = null;
+        for (let i = 0; i < response.data.length; i++) {
+            if (response.data[i].id !== facebookSettings.pageId) continue;
+            
+            token = response.data[i].access_token;
+            break;
+        }    
+
+        if (!token) return onError();
+
+        facebookAuthResponse.pageAccessToken = token;
+        facebookAuthResponse.pageAccessTokenTimeSet = new Date();
+        if (callback) callback();
+    });
+
+    function onError() {
+        $.alert('warning', 'Failed to obtain page access token');
+    }
 }
 
 const albumsFBIds = {};
@@ -146,7 +180,10 @@ function getAlbumFBId(albumData, callback) {
 
 //Create album on Facebook
 function createFbAlbum(albumData, callback) {
-    FB.api(facebookSettings.pageId + '/albums', 'post', albumData, function(response) {
+    const params = $.extend({}, albumData);
+    params.access_token = facebookAuthResponse.pageAccessToken;
+
+    FB.api(facebookSettings.pageId + '/albums', 'post', params, function(response) {
         const id = typeof response.id !== 'undefined' ? response.id : null;
 
         if (!id) {
