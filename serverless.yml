@@ -13,6 +13,7 @@ provider:
   region: eu-west-1
   memorySize: 128
   timeout: 60
+  deploymentBucket: fiestainfo-album-upload-lambda-deploy
 
   environment:
     FACEBOOK_APP_ID: ${self:custom.facebookAppId}
