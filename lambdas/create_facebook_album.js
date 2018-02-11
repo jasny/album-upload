@@ -8,7 +8,7 @@ const s3 = new AWS.S3();
 //Init Facebook settings
 const facebookSettings = {
     appId: process.env.FACEBOOK_APP_ID,
-    appSecret: process.env.APP_SECRET,
+    appSecret: process.env.FACEBOOK_APP_SECRET,
     pageId: process.env.FACEBOOK_PAGE_ID
 };
 
@@ -30,9 +30,15 @@ exports.handler = function(event, context) {
         return;
     }    
 
-    getAlbumId(bucket, fileKey)
-        .then(albumId => getAccessToken(albumId))
-        .then(albumId => uploadPictureToAlbum(albumId, bucket, fileKey))
+    FB.init({
+        appId: facebookSettings.appId,
+        autoLogAppEvents : true,
+        xfbml: true,
+        version: 'v2.11'
+    });
+
+    getMeta(bucket, fileKey)
+        .then((albumId, pageAccessToken) => uploadPictureToAlbum(albumId, pageAccessToken, bucket, fileKey))
         .then(() => {
             console.log('Picture uploaded to Facebook');
         })
@@ -42,7 +48,7 @@ exports.handler = function(event, context) {
 }
 
 //Get facebook album id
-function getAlbumId(bucket, fileKey) {
+function getMeta(bucket, fileKey) {
     return new Promise((resolve, reject) => {
         var params = {
             Bucket: bucket, 
@@ -52,48 +58,27 @@ function getAlbumId(bucket, fileKey) {
         s3.headObject(params, function(error, data) {
             if (error) return reject('Unable to get file metadata: ', err);                
             
-            const albumId = typeof data.Metadata['x-amz-album-facebook-id'] != 'undefined' ? 
-                data.Metadata['x-amz-album-facebook-id'] :
-                null;
+            const albumId = getMetaValue('x-amz-album-facebook-id');
+            const pageAccessToken = getMetaValue('x-amz-page-facebook-access-token');
 
             if (!albumId) return reject('Album Facebook id is not set');
+            if (!pageAccessToken) return reject('Facebook page access token is not set');
 
-            resolve(albumId);
+            resolve(albumId, pageAccessToken);
         });
     });
-}
 
-//Get Facebook access token
-function getAccessToken(albumId) {    
-    FB.init({
-        appId: facebookSettings.appId,
-        autoLogAppEvents : true,
-        xfbml: true,
-        version: 'v2.11'
-    });
-
-    return new Promise((resolve, reject) => {
-        FB.api('oauth/access_token', {
-            client_id: facebookSettings.appId,
-            client_secret: facebookSettings.appSecret,
-            grant_type: 'client_credentials'
-        }, function (res) {
-            if(!res || res.error || !res.access_token) {
-                reject('Unable to obtain facebook access token. ' + (res ? res.error : null));
-            } else {
-                FB.setAccessToken(res.access_token);
-                resolve(albumId);
-            }            
-        });        
-    })
+    function getMetaValue(data, name) {
+        return typeof data.Metadata[name] != 'undefined' ? data.Metadata[name] : null;
+    }
 }
 
 //Upload picture to album
-function uploadPictureToAlbum(albumId, bucket, fileKey) {
+function uploadPictureToAlbum(albumId, pageAccessToken, bucket, fileKey) {
     return new Promise((resolve, reject) => {
         const url = `https://${bucket}.s3.amazonaws.com/${fileKey}`;
 
-        FB.api('/' + albumId + '/photos', 'post', { url: url }, function (res) {
+        FB.api('/' + albumId + '/photos', 'post', { url: url, access_token: pageAccessToken }, function (res) {
             if(!res || res.error) {
                 reject('Error while uploading picture to Facebook. ' + (res ? res.error : null));
             } else {

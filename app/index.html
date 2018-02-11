@@ -47,6 +47,7 @@
                 <input type="hidden" name="x-amz-algorithm" value="" />
                 <input type="hidden" name="x-amz-date" value="" />
                 <input type="hidden" name="x-amz-album-facebook-id" value="" />
+                <input type="hidden" name="x-amz-page-facebook-access-token" value="" />
                 <input type="hidden" name="policy" value="" />
                 <input type="hidden" name="x-amz-signature" value="" />
             </form>
@@ -78,8 +79,8 @@
 
             //Init Facebook settings
             const facebookSettings = {
-                appId: '346280555872882', //Test Fiestainfo app (Fiestainfo LocalTest) '183989351617387', 
-                pageId: '285741291498805' //Fiestainfo app page
+                appId: '346280555872882', //Test Fiestainfo app (Fiestainfo LocalTest). Production app - '183989351617387', 
+                pageId: '1595429480526327' //Test page. Fiestainfo app page - '285741291498805'.
             };
 
             //In here will be stored Facebook auth response
