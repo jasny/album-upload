@@ -2,23 +2,23 @@
 
 const FB = require('fb');
 const Promise = require('promise');
+const util = require('util');
 const AWS = require('aws-sdk');
 const s3 = new AWS.S3();
 
 //Init Facebook settings
 const facebookSettings = {
-    appId: process.env.FACEBOOK_APP_ID,
-    appSecret: process.env.FACEBOOK_APP_SECRET,
-    pageId: process.env.FACEBOOK_PAGE_ID
+    appId: process.env.FACEBOOK_APP_ID
 };
 
 exports.handler = function(event, context) {
     console.log("Reading options from event:\n", util.inspect(event, {depth: 5}));
+    console.log("Facebook settings: ", facebookSettings);
        
-    //Object key may have spaces or unicode non-ASCII characters.
-    const fileKey = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, " "));  
-    const fileExt = fileKey.match(/\.([^.]*)$/);
     const bucket = event.Records[0].s3.bucket.name;
+    const fileKey = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, " "));  //Object key may have spaces or unicode non-ASCII characters.
+    var fileExt = fileKey.match(/\.([^.]*)$/);
+    fileExt = fileExt && fileExt[1];
 
     if (!fileExt) {
         console.error('Unable to infer image type for key ' + fileKey);
@@ -30,7 +30,7 @@ exports.handler = function(event, context) {
         return;
     }    
 
-    FB.init({
+    FB.options({
         appId: facebookSettings.appId,
         autoLogAppEvents : true,
         xfbml: true,
@@ -38,7 +38,7 @@ exports.handler = function(event, context) {
     });
 
     getMeta(bucket, fileKey)
-        .then((albumId, pageAccessToken) => uploadPictureToAlbum(albumId, pageAccessToken, bucket, fileKey))
+        .then((meta) => uploadPictureToAlbum(meta, bucket, fileKey))
         .then(() => {
             console.log('Picture uploaded to Facebook');
         })
@@ -57,14 +57,16 @@ function getMeta(bucket, fileKey) {
 
         s3.headObject(params, function(error, data) {
             if (error) return reject('Unable to get file metadata: ', err);                
+
+            console.log('Obtained meta: ', data);
             
-            const albumId = getMetaValue('x-amz-album-facebook-id');
-            const pageAccessToken = getMetaValue('x-amz-page-facebook-access-token');
+            const albumId = getMetaValue(data, 'album-facebook-id');
+            const pageAccessToken = getMetaValue(data, 'page-facebook-access-token');
 
             if (!albumId) return reject('Album Facebook id is not set');
             if (!pageAccessToken) return reject('Facebook page access token is not set');
 
-            resolve(albumId, pageAccessToken);
+            resolve({albumId, pageAccessToken});
         });
     });
 
@@ -74,11 +76,18 @@ function getMeta(bucket, fileKey) {
 }
 
 //Upload picture to album
-function uploadPictureToAlbum(albumId, pageAccessToken, bucket, fileKey) {
-    return new Promise((resolve, reject) => {
-        const url = `https://${bucket}.s3.amazonaws.com/${fileKey}`;
+function uploadPictureToAlbum(meta, bucket, fileKey) {
+    const albumId = meta.albumId;
+    const pageAccessToken = meta.pageAccessToken;
 
-        FB.api('/' + albumId + '/photos', 'post', { url: url, access_token: pageAccessToken }, function (res) {
+    return new Promise((resolve, reject) => {
+        const url = '/' + albumId + '/photos';
+        const imageUrl = encodeURI(`https://${bucket}.s3.amazonaws.com/${fileKey}`);
+        const params = {url: imageUrl, access_token: pageAccessToken};
+
+        console.log('Query: ', url, params);
+
+        FB.api(url, 'post', params, function (res) {
             if(!res || res.error) {
                 reject('Error while uploading picture to Facebook. ' + (res ? res.error : null));
             } else {

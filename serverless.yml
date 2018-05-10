@@ -4,7 +4,6 @@ service: album-upload
 custom:
   s3Bucket: jasny-test-public
   facebookAppId: 346280555872882 #Test Fiestainfo app (Fiestainfo LocalTest)
-  facebookPageId: 1595429480526327 #Test page
 
 provider:
   name: aws
@@ -17,7 +16,6 @@ provider:
 
   environment:
     FACEBOOK_APP_ID: ${self:custom.facebookAppId}
-    FACEBOOK_PAGE_ID: ${self:custom.facebookPageId}
 
   iamRoleStatements:
     - Effect: "Allow"

@@ -41,8 +41,10 @@ function onFacebookLoad() {
 
     FB.getLoginStatus(function(response) {
         if (response.status === 'connected') {
-            facebookAuthResponse = response.authResponse;
+            facebookAuthResponse = response;
             $loginBlock.find('.done').show();
+
+            canUploadToFacebook(getPageAccessToken);
         } else {
             $loginBlock.find('.not-done').show();
         }
@@ -119,7 +121,7 @@ function syncFacebookAlbums(callback) {
 function loadAlbums(callback) {
     if (!facebookAuthResponse) return callback();
 
-    const params = {limit: 1, fields: 'id,name'};
+    const params = {limit: 50, fields: 'id,name'};
     loadAlbumsPage(params, callback);
 }
 

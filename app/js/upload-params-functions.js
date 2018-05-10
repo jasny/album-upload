@@ -23,8 +23,8 @@ function getUploadParams(albumName, albumId) {
         "x-amz-credential": settings.accessKeyId + "/" + dateFormatted + "/" + settings.region + "/s3/aws4_request",
         "x-amz-algorithm": "AWS4-HMAC-SHA256",
         "x-amz-date": dateFormattedFull,
-        "x-amz-album-facebook-id": albumId ? albumId : "",
-        "x-amz-page-facebook-access-token": facebookAuthResponse.pageAccessToken ? facebookAuthResponse.pageAccessToken : ""
+        "x-amz-meta-album-facebook-id": albumId ? albumId : "",
+        "x-amz-meta-page-facebook-access-token": facebookAuthResponse.pageAccessToken ? facebookAuthResponse.pageAccessToken : ""
     };
 
     const policy = {
@@ -37,8 +37,8 @@ function getUploadParams(albumName, albumId) {
             {"x-amz-credential": policyValues['x-amz-credential']},
             {"x-amz-algorithm": policyValues['x-amz-algorithm']},
             {"x-amz-date": policyValues['x-amz-date']},
-            {"x-amz-album-facebook-id": policyValues['x-amz-album-facebook-id']},
-            {"x-amz-page-facebook-access-token": policyValues['x-amz-page-facebook-access-token']}
+            {"x-amz-meta-album-facebook-id": policyValues['x-amz-meta-album-facebook-id']},
+            {"x-amz-meta-page-facebook-access-token": policyValues['x-amz-meta-page-facebook-access-token']}
         ]
     };
     
