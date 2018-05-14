@@ -3,7 +3,7 @@ service: album-upload
 
 custom:
   s3Bucket: jasny-test-public
-  facebookAppId: 346280555872882 #Test Fiestainfo app (Fiestainfo LocalTest)
+  facebookAppId: 346280555872882 #Test Fiestainfo app (Fiestainfo LocalTest) - 346280555872882. Production app - 183989351617387
 
 provider:
   name: aws
