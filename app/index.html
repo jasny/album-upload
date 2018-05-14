@@ -1,0 +1,114 @@
+<!doctype html>
+<html class="no-js" lang="nl">
+    <head>
+        <title>Fiestainfo Album Upload</title>
+        <link rel="shortcut icon" href="/logo-100.png">
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/styles.css">        
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/dropzone/5.2.0/min/dropzone.min.css">        
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta http-equiv="language" content="en">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+
+    <body>
+        <div class="container">  
+            <h1>Add album</h1>
+
+            <form action="" id="album-form" method="post" data-toggle="validator">        
+                <div class="form-group">
+                    <label class="control-label col-sm-2">Album name*</label>
+                    <div class="col-sm-10">
+                        <input type="text" name="album_name" class="form-control album-name" value="" required/>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label col-sm-2">Message</label>
+                    <div class="col-sm-10">
+                        <input type="text" name="message" class="form-control album-message" value=""/>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label col-sm-2">Location</label>
+                    <div class="col-sm-10">
+                        <input type="text" name="location" class="form-control album-location" value=""/>
+                    </div>
+                </div>
+            </form>
+            
+            <form action="/" enctype="multipart/form-data" method="POST" id="pictures-upload" class="dropzone">
+                <input type="hidden" name="acl" value="" />
+                <input type="hidden" name="key" value="" />
+                <input type="hidden" name="Content-Type" value="" />
+                <input type="hidden" name="x-amz-credential" value="" />
+                <input type="hidden" name="x-amz-algorithm" value="" />
+                <input type="hidden" name="x-amz-date" value="" />
+                <input type="hidden" name="x-amz-meta-album-facebook-id" value="" />
+                <input type="hidden" name="x-amz-meta-page-facebook-access-token" value="" />
+                <input type="hidden" name="policy" value="" />
+                <input type="hidden" name="x-amz-signature" value="" />
+            </form>
+            
+            <div class="facebook-login-block">
+                <p class="not-done">
+                    Album will be uploaded to S3. If you want it to be also created on Facebook, please login into Facebook: 
+                    <a href="javascript:;" class="facebook-login"><img src="/img/sign-in-facebook.png"/>&nbsp;</a>
+                </p>
+                <p class="done">
+                    You are logged in to Facebook. Album will also be created there. <a href="javascript:;" class="facebook-logout">Logout</a>
+                </p>
+            </div>
+        </div>        
+
+        <script src="//code.jquery.com/jquery.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/dropzone/5.2.0/min/dropzone.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/1000hz-bootstrap-validator/0.11.9/validator.min.js"></script>
+        <script src="//cdn.jsdelivr.net/npm/node-forge@0.7.0/dist/forge.min.js"></script>
+
+        <script>
+            //Init AWS settings
+            const awsSettings = {
+                accessKeyId: '',
+                secret: '',
+                region: '',
+                bucket: '' //bucket name
+            };
+
+            //Init Facebook settings
+            const facebookSettings = {
+                appId: '346280555872882', //Test Fiestainfo app (Fiestainfo LocalTest) - 346280555872882. Production app - 183989351617387 
+                pageId: '285741291498805'
+            };
+
+            //In here will be stored Facebook auth response
+            var facebookAuthResponse = null;
+
+            //Load Facebook SDK
+            window.fbAsyncInit = function() {
+                FB.init({
+                    appId: facebookSettings.appId,
+                    autoLogAppEvents : true,
+                    xfbml: true,
+                    version: 'v2.11'
+                });
+
+                onFacebookLoad();
+            };
+
+            (function(d, s, id){
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) {return;}
+                js = d.createElement(s); js.id = id;
+                js.src = "https://connect.facebook.net/en_US/sdk.js";
+                fjs.parentNode.insertBefore(js, fjs);
+            }(document, 'script', 'facebook-jssdk'));
+        </script>
+        <script src="/js/upload-params-functions.js"></script>
+        <script src="/js/upload-functions.js"></script>
+        <script src="/js/facebook.js"></script>
+        <script src="/js/upload.js"></script>
+    </body>
+</html>

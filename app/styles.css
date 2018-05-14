@@ -1,0 +1,38 @@
+.form-group {
+    margin-bottom: 15px;
+    float: left;
+    width: 100%;
+}
+
+#album-form {
+    overflow: hidden;
+}
+
+.alert-fixed-top {
+    position: fixed;
+    top: 0;
+    text-align: center;
+    width: 100%;
+}
+
+.facebook-login-block {
+    margin-top: 30px;
+}
+
+.facebook-login-block > * {
+    display: none;
+}
+
+.facebook-login-block .facebook-login {
+    display: inline-block;
+    width: 198px;
+    height: 38px;
+    vertical-align: bottom;
+    margin-bottom: -8px;
+    text-decoration: none;
+    outline: 0;
+}
+
+.facebook-login-block .facebook-login img {
+    width: inherit;
+}

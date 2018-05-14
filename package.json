@@ -1,0 +1,30 @@
+{
+  "name": "album-upload",
+  "version": "1.0.0",
+  "description": "Small app for uploading images to S3, with lambdas to process these images after upload",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jasny/album-upload.git"
+  },
+  "keywords": [
+    "aws",
+    "s3",
+    "image",
+    "upload"
+  ],
+  "author": "Sergey Boltonosov <minstriely@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jasny/album-upload/issues"
+  },
+  "homepage": "https://github.com/jasny/album-upload#readme",
+  "dependencies": {
+    "aws-sdk": "^2.188.0",
+    "fb": "^2.0.0",
+    "promise": "^8.0.1"
+  }
+}
