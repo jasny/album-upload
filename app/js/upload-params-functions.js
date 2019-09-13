@@ -1,9 +1,8 @@
+var uploadParams = null;
+
 //Create upload params for sending file to AWS S3
-function getUploadParams(album) {
-    if (!album) return null;     
-    
+function getUploadParams(albumName, albumId) {
     const settings = getAWSSettings();
-    if (!settings) return null;
         
     const today = new Date();
     const month = ("0" + (today.getMonth() + 1)).substr(-2);
@@ -19,11 +18,12 @@ function getUploadParams(album) {
 
     const policyValues = {
         acl: "public-read",
-        key: album + "/",
+        key: albumName + "/",
         "Content-Type": "image/",
         "x-amz-credential": settings.accessKeyId + "/" + dateFormatted + "/" + settings.region + "/s3/aws4_request",
         "x-amz-algorithm": "AWS4-HMAC-SHA256",
-        "x-amz-date": dateFormattedFull
+        "x-amz-date": dateFormattedFull,
+        "x-amz-album-facebook-id": albumId ? albumId : ""
     };
 
     const policy = {
@@ -35,7 +35,8 @@ function getUploadParams(album) {
             ["starts-with", "$Content-Type", policyValues['Content-Type']],
             {"x-amz-credential": policyValues['x-amz-credential']},
             {"x-amz-algorithm": policyValues['x-amz-algorithm']},
-            {"x-amz-date": policyValues['x-amz-date']}
+            {"x-amz-date": policyValues['x-amz-date']},
+            {"x-amz-album-facebook-id": policyValues['x-amz-album-facebook-id']}
         ]
     };
     
@@ -90,79 +91,5 @@ function encodeSHA256(stringToEncode, key, binary) {
 
 //Get base AWS settings
 function getAWSSettings() {
-    if (!awsSettings.accessKeyId || !awsSettings.secret || !awsSettings.region || !awsSettings.bucket) {
-        $.alert('danger', 'Access to AWS is not configured');
-        return null;
-    }
-
     return awsSettings;
-}
-
-//Check reference to album on facebook. Stub for now
-function getAlbumReference() {
-    return true;
-}
-    
-//Save album info and perform some action after saving
-function saveAlbumInfo(success, error) {                 
-    addDefferedFileAction(success, error);
-    
-    //For now do not create album on Facebook
-    //Instead immediately process file
-    
-    doDefferedFileAction('success');
-}        
-
-const actions = {'success': [], 'error': []};    
-
-//Defer file upload or removal
-function addDefferedFileAction(success, error) {
-    actions.success.push(success);
-    actions.error.push(error);     
-}
-
-//Do each file upload or removal after album auto-creation
-function doDefferedFileAction(type) {
-    if (!actions[type] || !actions[type].length) return; 
-    
-    for (var i=0; i<actions[type].length; i++) {
-        if (actions[type][i]) actions[type][i]();
-    }
-    
-    actions[type] = [];
-}      
-
-//Validate album form on add pictures before album auto-creation
-function validateForm() {
-    var $form = $('#album-form');
-    $form.validator('validate');
-
-    return !$form.find(':invalid').length;
-}
-
-$.alert = function(status, message, callback, autoClose) {
-    if (status === 'error') status = 'danger';
-    if (autoClose !== false) autoClose = true;
-    
-    var $alert = $('<div class="alert alert-fixed-top">')
-        .addClass('alert-' + status)
-        .hide()
-        .append('<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>')
-        .append(message)
-        .appendTo('body')
-        .fadeIn();
-        
-    if (!autoClose) {
-        $alert.addClass('no-auto-close');
-        return;
-    }
-
-    setTimeout(function() {
-        $alert.fadeOut(function() { 
-            this.remove(); 
-            if (callback){
-                callback();
-            }
-        });
-    }, 3000);
 }
